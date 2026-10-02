@@ -110,13 +110,10 @@ teesim_gen_config() {
     done
     _apps=$(printf '%s' "$_apps" | sed '$ s/,$//')   # drop the trailing comma
 
-    # mode=generation: mint the whole key in software under the keybox. "patch"
-    # keeps the real hardware key and only re-signs its attestation — fewer
-    # detection points, but it needs a working hardware KeyMint level. Many custom
-    # ROMs (and this repo's target audience) run devices whose real TEE keystore is
-    # unreachable (keystore2 reports HARDWARE_TYPE_UNAVAILABLE); there, patch has no
-    # base key to re-sign and falls through to the real HAL → BASIC. generation
-    # always works and still yields a hardware-backed chain (the keybox is the root).
+    # mode=generation: mint the whole key in software under the keybox.
+    # Leave brand/device/product/manufacturer/model empty ("") so TEESimulator
+    # harvests the calling app's active Build identity (matching PlayIntegrityFork)
+    # rather than forcing a conflicting Pixel model onto a non-Pixel process.
     cat > "$_cfg" <<EOF
 {
   "version": 1,
@@ -126,11 +123,11 @@ teesim_gen_config() {
       "mode": "generation",
       "patchLevel": { "system": "$_sys", "vendor": "YYYY-MM-05", "boot": "YYYY-MM-05" },
       "osVersion": "harvested",
-      "brand": "$_brand",
-      "device": "$_device",
-      "product": "$_product",
-      "manufacturer": "$_manu",
-      "model": "$_model",
+      "brand": "",
+      "device": "",
+      "product": "",
+      "manufacturer": "",
+      "model": "",
       "serial": "",
       "imei": "",
       "meid": "",
@@ -182,19 +179,15 @@ attest_install() {
 # would fight over the keystore2 injection). The App's argv[0] is the home dir
 # where its inject binary + native libs live ($MODDIR/teesim).
 attest_start() {
-    # The loop's pid is one line in alwaysstrong/state (teesim_loop=...), not a
-    # file of its own; service.sh has sourced as_store.sh before this runs, and
-    # without it the guard simply lets the loop start.
-    if command -v st_get >/dev/null 2>&1 &&
-       kill -0 "$(st_get teesim_loop)" 2>/dev/null; then
+    if attest_alive; then
         return 0
     fi
     teesim_gen_config
-    _home="$MODDIR/teesim"
+    _home="${MODDIR:-$MODPATH}/teesim"
     [ -f "$_home/classes.dex" ] || return 1
     ( while true; do
         /system/bin/app_process -Djava.class.path="$_home/classes.dex" "$_home" \
-            --nice-name=teesim org.matrix.teesim.App "$_home" || break
+            --nice-name=teesim org.matrix.teesim.App "$_home" >/dev/null 2>&1 || break
         sleep 2
       done ) &
     command -v st_set >/dev/null 2>&1 && st_set teesim_loop "$!"
