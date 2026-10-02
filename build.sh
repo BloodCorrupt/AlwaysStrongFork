@@ -34,7 +34,7 @@
 #   ./build.sh --tee-file PATH              # use a LOCAL TEESimulator-RS zip, skip the download
 #   ./build.sh --tsoss v3.0.0               # override the TrickyStoreOSS release tag
 #   ./build.sh --tsoss-file PATH            # use a LOCAL TrickyStoreOSS zip, skip the download
-#   ./build.sh --teesim canary-63           # override the TEESimulator (JingMatrix) tag
+#   ./build.sh --teesim v4.0                # override the TEESimulator (JingMatrix) tag
 #   ./build.sh --teesim-file PATH           # use a LOCAL TEESimulator (JingMatrix) zip
 #   ./build.sh --pif v16                    # override the PIF tag  (needs --variant)
 #   ./build.sh --pif-file PATH              # use a LOCAL PIF zip   (needs --variant)
@@ -84,8 +84,8 @@ TSOSS_ASSET_DEFAULT="Tricky-Store-OSS-v3.1.0-172-41383f5-Release.zip"
 # keystore2. It uses its own /data/adb/teesim/config.json layout, so attest/
 # teesim.sh bridges the AlwaysStrong keybox + target list into it. Only used with
 # --engine teesim. Pinned here; --teesim / --teesim-file override. 64-bit only.
-TEESIM_TAG_DEFAULT="canary-63"
-TEESIM_ASSET_DEFAULT="TEESimulator-v4.0-63-123d8ba-Release.zip"
+TEESIM_TAG_DEFAULT="v4.0"
+TEESIM_ASSET_DEFAULT="TEESimulator-v4.0-34-Release.zip"
 
 TEE_TAG="$TEE_TAG_DEFAULT"
 TEE_ASSET="$TEE_ASSET_DEFAULT"
