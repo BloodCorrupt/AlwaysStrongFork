@@ -468,7 +468,12 @@ build_variant() {
   # shellcheck source=/dev/null
   source "$BUILD/.build.conf.$VARIANT"
   rm -f "$BUILD/.build.conf.$VARIANT"
-  [[ -n "$PIF_TAG_OVERRIDE"   ]] && PIF_TAG="$PIF_TAG_OVERRIDE"
+  if [[ -n "$PIF_TAG_OVERRIDE" ]]; then
+      if [[ -z "$PIF_ASSET_OVERRIDE" && "$PIF_ASSET" =~ ^([A-Za-z0-9_.-]+-)[^.]+(\.zip)$ ]]; then
+          PIF_ASSET="${BASH_REMATCH[1]}${PIF_TAG_OVERRIDE}${BASH_REMATCH[2]}"
+      fi
+      PIF_TAG="$PIF_TAG_OVERRIDE"
+  fi
   [[ -n "$PIF_ASSET_OVERRIDE" ]] && PIF_ASSET="$PIF_ASSET_OVERRIDE"
   if [[ "$PIF_NONE" != "1" ]]; then
       [[ -n "$PIF_REPO" && -n "$PIF_TAG" && -n "$PIF_ASSET" ]] \
