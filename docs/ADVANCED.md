@@ -102,7 +102,7 @@ The keystore backend is chosen with `--engine`:
 
 - **`tee`** — [TEESimulator-RS](https://github.com/Enginex0/TEESimulator-RS) (default, Rust port). Reads `/data/adb/tricky_store/`.
 - **`trickystoreoss`** — the open-source [TrickyStoreOSS](https://github.com/beakthoven/TrickyStoreOSS). Also reads `/data/adb/tricky_store/`. `-TSOSS` suffix.
-- **`teesim`** — the original [TEESimulator by JingMatrix](https://github.com/JingMatrix/TEESimulator) (Kotlin control daemon + native KeyMint interceptor). Uses its own `/data/adb/teesim/config.json`; `attest/teesim.sh` bridges the shared keybox + target list into it. 64-bit only. `-TEESIM` suffix.
+- **`teesim`** — the original [TEESimulator by JingMatrix](https://github.com/JingMatrix/TEESimulator) (Kotlin control daemon + native KeyMint interceptor). Uses its own `/data/adb/teesim/config.json`; `attest/teesim.sh` bridges the shared keybox + target list into it. 64-bit only (bundles `arm64-v8a` and `x86_64` for full device and x64 emulator compatibility; customizable via `--teesim-abis`). `-TEESIM` suffix.
 
 To build an engine from a local upstream ZIP instead of the pinned download:
 

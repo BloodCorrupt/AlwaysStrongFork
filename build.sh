@@ -93,6 +93,7 @@ TSOSS_TAG="$TSOSS_TAG_DEFAULT"
 TSOSS_ASSET="$TSOSS_ASSET_DEFAULT"
 TEESIM_TAG="$TEESIM_TAG_DEFAULT"
 TEESIM_ASSET="$TEESIM_ASSET_DEFAULT"
+TEESIM_ABIS="${TEESIM_ABIS:-arm64-v8a x86_64}"
 ENGINE_KIND="tee"          # tee (default) | trickystoreoss | teesim
 DO_CLEAN=0
 TEE_FILE=""
@@ -114,6 +115,7 @@ while [[ $# -gt 0 ]]; do
         --teesim)     TEESIM_TAG="$2"; shift 2 ;;
         --teesim-asset) TEESIM_ASSET="$2"; shift 2 ;;
         --teesim-file) TEESIM_FILE="$2"; shift 2 ;;
+        --teesim-abis) TEESIM_ABIS="$2"; shift 2 ;;
         --engine)     ENGINE_KIND="$2"; shift 2 ;;
         --pif)        PIF_TAG_OVERRIDE="$2"; shift 2 ;;
         --pif-asset)  PIF_ASSET_OVERRIDE="$2"; shift 2 ;;
@@ -139,6 +141,7 @@ TSOSS_TAG=$(strip_cr "$TSOSS_TAG")
 TSOSS_ASSET=$(strip_cr "$TSOSS_ASSET")
 TEESIM_TAG=$(strip_cr "$TEESIM_TAG")
 TEESIM_ASSET=$(strip_cr "$TEESIM_ASSET")
+TEESIM_ABIS=$(strip_cr "$TEESIM_ABIS")
 ENGINE_KIND=$(strip_cr "$ENGINE_KIND")
 BUILD_TAG=$(strip_cr "$BUILD_TAG")
 
@@ -644,12 +647,10 @@ else
     [[ -f "$TEESIM_EXTRACT/config.default.json" ]] \
         && cp "$TEESIM_EXTRACT/config.default.json" "$STAGE/teesim/config.default.json"
 
-    # Per-ABI native payload. TEESimulator's keymint lib is ~19 MB PER ABI, so
-    # shipping both arm64-v8a and x86_64 would make an 18 MB zip. teesim is 64-bit
-    # only and virtually every rooted device is arm64, so the release ships
-    # arm64-v8a ONLY (~9 MB). x86_64 (emulators / a few Chromebooks) can self-build
-    # with TEESIM_ABIS="arm64-v8a x86_64".
-    TEESIM_ABIS="${TEESIM_ABIS:-arm64-v8a}"
+    # Per-ABI native payload. TEESimulator ships 64-bit binaries (arm64-v8a and x86_64).
+    # Bundling both gives full compatibility for real ARM64 devices and x86_64 emulators.
+    # At install time, customize.sh keeps only the running device's ABI and removes the other.
+    TEESIM_ABIS="${TEESIM_ABIS:-arm64-v8a x86_64}"
     _teesim_abis=0
     for abi in $TEESIM_ABIS; do
         if [[ -d "$TEESIM_EXTRACT/$abi" ]]; then
@@ -659,8 +660,12 @@ else
         fi
     done
     [[ "$_teesim_abis" -gt 0 ]] || die "TEESimulator (JingMatrix) ZIP has none of: $TEESIM_ABIS — upstream layout changed"
-    [[ -f "$STAGE/teesim/arm64-v8a/inject" ]] \
-        || die "TEESimulator (JingMatrix) ZIP missing arm64-v8a/inject — upstream layout changed"
+    for abi in $TEESIM_ABIS; do
+        if [[ -d "$TEESIM_EXTRACT/$abi" ]]; then
+            [[ -f "$STAGE/teesim/$abi/inject" ]] \
+                || die "TEESimulator (JingMatrix) ZIP missing $abi/inject — upstream layout changed"
+        fi
+    done
 
     # Merge its keystore sepolicy rules into ours (same as TrickyStoreOSS).
     if [[ -f "$TEESIM_EXTRACT/sepolicy.rule" ]]; then
@@ -881,8 +886,10 @@ done
 # 7) Ensure executable bits on shell scripts, TEE daemon, native binaries
 chmod 755 "$STAGE/daemon" "$STAGE"/*.sh 2>/dev/null || true
 for abi in arm64-v8a armeabi-v7a x86 x86_64; do
-    [[ -f "$STAGE/bin/$abi/aswatcher" ]] && chmod 755 "$STAGE/bin/$abi/aswatcher"
-    [[ -f "$STAGE/bin/$abi/asfetch" ]]   && chmod 755 "$STAGE/bin/$abi/asfetch"
+    [[ -f "$STAGE/bin/$abi/aswatcher" ]]   && chmod 755 "$STAGE/bin/$abi/aswatcher"
+    [[ -f "$STAGE/bin/$abi/asfetch" ]]     && chmod 755 "$STAGE/bin/$abi/asfetch"
+    [[ -f "$STAGE/teesim/$abi/inject" ]]   && chmod 755 "$STAGE/teesim/$abi/inject"
+    [[ -f "$STAGE/teesim/$abi/teesim-uds" ]] && chmod 755 "$STAGE/teesim/$abi/teesim-uds"
 done
 
 # Note: webroot/ (KSU/APatch/MMRL WebUI) gets staged automatically by step 1's

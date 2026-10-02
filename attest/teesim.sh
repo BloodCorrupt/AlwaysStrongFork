@@ -161,10 +161,10 @@ attest_install() {
     done
     chmod -R 0755 "$MODPATH/teesim" 2>/dev/null
 
-    # The release zip ships arm64-v8a only. On x86_64 there is no payload to run.
+    # Ensure the native payload for this device's ABI exists.
     if [ ! -f "$MODPATH/teesim/$ABI_DIR/inject" ]; then
         ui_print "⚠️ no TEESimulator (JingMatrix) payload for $ABI_DIR"
-        ui_print "⚠️ this build is arm64-v8a only — use a -tee or -TSOSS build here"
+        ui_print "⚠️ this build has no payload for $ABI_DIR — use a -tee or -TSOSS build here"
         return 0
     fi
 
